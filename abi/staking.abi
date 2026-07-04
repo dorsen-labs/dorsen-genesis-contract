@@ -569,8 +569,8 @@
     "outputs": [
       {
         "name": "",
-        "type": "uint16",
-        "internalType": "uint16"
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
