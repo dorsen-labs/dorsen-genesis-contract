@@ -18,8 +18,8 @@ contract GovToken is
     ERC20VotesUpgradeable
 {
     /*----------------- constants -----------------*/
-    string private constant NAME = "Dorsen Governance Token";
-    string private constant SYMBOL = "govDC";
+    string private constant NAME = "BSC Governance Token";
+    string private constant SYMBOL = "govBNB";
 
     /*----------------- errors -----------------*/
     // @notice signature: 0x8cd22d19
