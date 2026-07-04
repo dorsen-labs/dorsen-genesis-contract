@@ -10,11 +10,6 @@ program.version('0.0.1');
 program.option('-c, --chainId <chainId>', 'chain id', '714');
 program.option('-o, --output <output-file>', 'Genesis json file', './genesis.json');
 program.option('-t, --template <template>', 'Genesis template json', './genesis-template.json');
-program.option(
-  '--initLockedBNBOnTokenHub <initLockedBNBOnTokenHub>',
-  'initLockedBNBOnTokenHub',
-  '176405560900000000000000000'
-);
 program.parse(process.argv);
 
 // get byte code from compiled contract
@@ -62,7 +57,6 @@ Promise.all([
   readByteCode('tokenRecoverPortal', 'out/TokenRecoverPortal.sol/TokenRecoverPortal.json'),
 ]).then((result) => {
   const data = {
-    initLockedBNBOnTokenHub: program.initLockedBNBOnTokenHub,
     chainId: program.chainId,
     initHolders: init_holders,
     extraData: web3.utils.bytesToHex(validators.extraValidatorBytes),
