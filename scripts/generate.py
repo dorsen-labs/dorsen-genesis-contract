@@ -162,7 +162,7 @@ def generate_system():
         os.path.join(work_dir, "contracts", contract), os.path.join(work_dir, "contracts", contract[:-4] + ".bak")
     )
 
-    replace_parameter(contract, "uint16 public constant bscChainID", f"0x{hex_chain_id}")
+    replace_parameter(contract, "uint32 public constant bscChainID", f"0x{hex_chain_id}")
 
 
 def generate_system_reward():
