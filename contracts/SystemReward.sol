@@ -6,7 +6,7 @@ import "./interface/0.6.x/IParamSubscriber.sol";
 import "./interface/0.6.x/ISystemReward.sol";
 
 contract SystemReward is System, IParamSubscriber, ISystemReward {
-    uint256 public constant MAX_REWARDS = 5e18;
+    uint256 public constant MAX_REWARDS = 2e18;
 
     uint256 public numOperator;
     mapping(address => bool) operators;
@@ -15,14 +15,19 @@ contract SystemReward is System, IParamSubscriber, ISystemReward {
         if (!alreadyInit) {
             operators[LIGHT_CLIENT_ADDR] = true;
             operators[INCENTIVIZE_ADDR] = true;
-            numOperator = 2;
+            operators[VALIDATOR_CONTRACT_ADDR] = true;
+            operators[SLASH_CONTRACT_ADDR] = true;
+            numOperator = 4;
             alreadyInit = true;
         }
         _;
     }
 
     modifier onlyOperator() {
-        require(operators[msg.sender], "only operator is allowed to call the method");
+        require(
+            operators[msg.sender],
+            "only operator is allowed to call the method"
+        );
         _;
     }
 
@@ -43,7 +48,9 @@ contract SystemReward is System, IParamSubscriber, ISystemReward {
         address payable to,
         uint256 amount
     ) external override(ISystemReward) doInit onlyOperator returns (uint256) {
-        uint256 actualAmount = amount < address(this).balance ? amount : address(this).balance;
+        uint256 actualAmount = amount < address(this).balance
+            ? amount
+            : address(this).balance;
         if (actualAmount > MAX_REWARDS) {
             actualAmount = MAX_REWARDS;
         }
@@ -60,10 +67,16 @@ contract SystemReward is System, IParamSubscriber, ISystemReward {
         return operators[addr];
     }
 
-    function updateParam(string calldata key, bytes calldata value) external override onlyGov {
+    function updateParam(
+        string calldata key,
+        bytes calldata value
+    ) external override onlyGov {
         if (Memory.compareStrings(key, "addOperator")) {
             bytes memory valueLocal = value;
-            require(valueLocal.length == 20, "length of value for addOperator should be 20");
+            require(
+                valueLocal.length == 20,
+                "length of value for addOperator should be 20"
+            );
             address operatorAddr;
             assembly {
                 operatorAddr := mload(add(valueLocal, 20))
@@ -72,7 +85,10 @@ contract SystemReward is System, IParamSubscriber, ISystemReward {
             emit addOperator(operatorAddr);
         } else if (Memory.compareStrings(key, "deleteOperator")) {
             bytes memory valueLocal = value;
-            require(valueLocal.length == 20, "length of value for deleteOperator should be 20");
+            require(
+                valueLocal.length == 20,
+                "length of value for deleteOperator should be 20"
+            );
             address operatorAddr;
             assembly {
                 operatorAddr := mload(add(valueLocal, 20))

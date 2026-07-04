@@ -36,14 +36,16 @@ contract BSCGovernor is
      */
     uint256 private constant BLOCK_INTERVAL = 3 seconds; // TODO(Nathan): Only can be used to do initialize!
     uint256 private constant INIT_VOTING_DELAY = 0 hours / BLOCK_INTERVAL;
-    uint256 private constant INIT_VOTING_PERIOD = 7 days / BLOCK_INTERVAL;
-    uint256 private constant INIT_PROPOSAL_THRESHOLD = 200 ether; //  = 200 BNB
+    uint256 private constant INIT_VOTING_PERIOD = 2 * (7 days / BLOCK_INTERVAL); // based on lorentz phase 1
+    uint256 private constant INIT_PROPOSAL_THRESHOLD = 100 ether; //  = 100 DC
     uint256 private constant INIT_QUORUM_NUMERATOR = 10; // for >= 10%
 
-    // starting propose requires totalSupply of GovBNB >= 10000000 * 1e18
-    uint256 private constant PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD = 10_000_000 ether;
+    // starting propose requires totalSupply of GovDC >= 10500 * 1e18
+    uint256 private constant PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD =
+        10_500 ether;
     // ensures there is a minimum voting period (1 days) after quorum is reached
-    uint64 private constant INIT_MIN_PERIOD_AFTER_QUORUM = uint64(1 days / BLOCK_INTERVAL);
+    uint64 private constant INIT_MIN_PERIOD_AFTER_QUORUM =
+        uint64(2 * (1 days / BLOCK_INTERVAL)); // 2 * lorentz phase
 
     /*----------------- errors -----------------*/
     // @notice signature: 0x584a7938
@@ -65,10 +67,16 @@ contract BSCGovernor is
     /*----------------- init -----------------*/
     function initialize() external initializer onlyCoinbase onlyZeroGasPrice {
         __Governor_init("BSCGovernor");
-        __GovernorSettings_init(INIT_VOTING_DELAY, INIT_VOTING_PERIOD, INIT_PROPOSAL_THRESHOLD);
+        __GovernorSettings_init(
+            INIT_VOTING_DELAY,
+            INIT_VOTING_PERIOD,
+            INIT_PROPOSAL_THRESHOLD
+        );
         __GovernorCompatibilityBravo_init();
         __GovernorVotes_init(IVotesUpgradeable(GOV_TOKEN_ADDR));
-        __GovernorTimelockControl_init(TimelockControllerUpgradeable(payable(TIMELOCK_ADDR)));
+        __GovernorTimelockControl_init(
+            TimelockControllerUpgradeable(payable(TIMELOCK_ADDR))
+        );
         __GovernorVotesQuorumFraction_init(INIT_QUORUM_NUMERATOR);
         __GovernorPreventLateQuorum_init(INIT_MIN_PERIOD_AFTER_QUORUM);
 
@@ -76,7 +84,9 @@ contract BSCGovernor is
         whitelistTargets[GOV_HUB_ADDR] = true;
 
         // Different address will be set depending on the environment
-        __Protectable_init_unchained(0x08E68Ec70FA3b629784fDB28887e206ce8561E08);
+        __Protectable_init_unchained(
+            0x08E68Ec70FA3b629784fDB28887e206ce8561E08
+        );
     }
 
     /*----------------- external functions -----------------*/
@@ -93,7 +103,11 @@ contract BSCGovernor is
         string memory description
     )
         public
-        override(GovernorUpgradeable, GovernorCompatibilityBravoUpgradeable, IGovernorUpgradeable)
+        override(
+            GovernorUpgradeable,
+            GovernorCompatibilityBravoUpgradeable,
+            IGovernorUpgradeable
+        )
         whenNotPaused
         notInBlackList
         returns (uint256)
@@ -102,20 +116,33 @@ contract BSCGovernor is
 
         uint256 latestProposalId = latestProposalIds[msg.sender];
         if (latestProposalId != 0) {
-            ProposalState proposersLatestProposalState = state(latestProposalId);
+            ProposalState proposersLatestProposalState = state(
+                latestProposalId
+            );
             if (
-                proposersLatestProposalState == ProposalState.Active
-                    || proposersLatestProposalState == ProposalState.Pending
+                proposersLatestProposalState == ProposalState.Active ||
+                proposersLatestProposalState == ProposalState.Pending
             ) {
                 revert OneLiveProposalPerProposer();
             }
         }
 
         bytes32 descriptionHash = keccak256(bytes(description));
-        uint256 proposalId = hashProposal(targets, values, calldatas, descriptionHash);
+        uint256 proposalId = hashProposal(
+            targets,
+            values,
+            calldatas,
+            descriptionHash
+        );
         latestProposalIds[msg.sender] = proposalId;
 
-        return GovernorCompatibilityBravoUpgradeable.propose(targets, values, calldatas, description);
+        return
+            GovernorCompatibilityBravoUpgradeable.propose(
+                targets,
+                values,
+                calldatas,
+                description
+            );
     }
 
     /**
@@ -132,7 +159,10 @@ contract BSCGovernor is
         bytes32 descriptionHash
     )
         public
-        override(GovernorTimelockControlUpgradeable, IGovernorTimelockUpgradeable)
+        override(
+            GovernorTimelockControlUpgradeable,
+            IGovernorTimelockUpgradeable
+        )
         whenNotPaused
         notInBlackList
         returns (uint256 proposalId)
@@ -141,7 +171,13 @@ contract BSCGovernor is
             if (!whitelistTargets[targets[i]]) revert NotWhitelisted();
         }
 
-        return GovernorTimelockControlUpgradeable.queue(targets, values, calldatas, descriptionHash);
+        return
+            GovernorTimelockControlUpgradeable.queue(
+                targets,
+                values,
+                calldatas,
+                descriptionHash
+            );
     }
 
     /**
@@ -157,10 +193,20 @@ contract BSCGovernor is
         bytes32 descriptionHash
     )
         public
-        override(GovernorUpgradeable, GovernorCompatibilityBravoUpgradeable, IGovernorUpgradeable)
+        override(
+            GovernorUpgradeable,
+            GovernorCompatibilityBravoUpgradeable,
+            IGovernorUpgradeable
+        )
         returns (uint256)
     {
-        return GovernorCompatibilityBravoUpgradeable.cancel(targets, values, calldatas, descriptionHash);
+        return
+            GovernorCompatibilityBravoUpgradeable.cancel(
+                targets,
+                values,
+                calldatas,
+                descriptionHash
+            );
     }
 
     /*----------------- system functions -----------------*/
@@ -168,36 +214,47 @@ contract BSCGovernor is
      * @param key the key of the param
      * @param value the value of the param
      */
-    function updateParam(string calldata key, bytes calldata value) external onlyGov {
+    function updateParam(
+        string calldata key,
+        bytes calldata value
+    ) external onlyGov {
         if (key.compareStrings("votingDelay")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newVotingDelay = value.bytesToUint256(32);
-            if (newVotingDelay == 0 || newVotingDelay > 24 hours) revert InvalidValue(key, value);
+            if (newVotingDelay == 0 || newVotingDelay > 24 hours)
+                revert InvalidValue(key, value);
             _setVotingDelay(newVotingDelay);
         } else if (key.compareStrings("votingPeriod")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newVotingPeriod = value.bytesToUint256(32);
-            if (newVotingPeriod == 0 || newVotingPeriod > 30 days) revert InvalidValue(key, value);
+            if (newVotingPeriod == 0 || newVotingPeriod > 30 days)
+                revert InvalidValue(key, value);
             _setVotingPeriod(newVotingPeriod);
         } else if (key.compareStrings("proposalThreshold")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newProposalThreshold = value.bytesToUint256(32);
-            if (newProposalThreshold == 0 || newProposalThreshold > 10_000 ether) revert InvalidValue(key, value);
+            if (
+                newProposalThreshold == 0 || newProposalThreshold > 10_000 ether
+            ) revert InvalidValue(key, value);
             _setProposalThreshold(newProposalThreshold);
         } else if (key.compareStrings("quorumNumerator")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newQuorumNumerator = value.bytesToUint256(32);
-            if (newQuorumNumerator < 5 || newQuorumNumerator > 20) revert InvalidValue(key, value);
+            if (newQuorumNumerator < 5 || newQuorumNumerator > 20)
+                revert InvalidValue(key, value);
             _updateQuorumNumerator(newQuorumNumerator);
         } else if (key.compareStrings("minPeriodAfterQuorum")) {
             if (value.length != 8) revert InvalidValue(key, value);
             uint64 newMinPeriodAfterQuorum = value.bytesToUint64(8);
-            if (newMinPeriodAfterQuorum == 0 || newMinPeriodAfterQuorum > 2 days) revert InvalidValue(key, value);
+            if (
+                newMinPeriodAfterQuorum == 0 || newMinPeriodAfterQuorum > 2 days
+            ) revert InvalidValue(key, value);
             _setLateQuorumVoteExtension(newMinPeriodAfterQuorum);
         } else if (key.compareStrings("governorProtector")) {
             if (value.length != 20) revert InvalidValue(key, value);
             address newGovernorProtector = value.bytesToAddress(20);
-            if (newGovernorProtector == address(0)) revert InvalidValue(key, value);
+            if (newGovernorProtector == address(0))
+                revert InvalidValue(key, value);
             _setProtector(newGovernorProtector);
         } else {
             revert UnknownParam(key, value);
@@ -219,10 +276,15 @@ contract BSCGovernor is
     )
         public
         view
-        override(GovernorUpgradeable, IERC165Upgradeable, GovernorTimelockControlUpgradeable)
+        override(
+            GovernorUpgradeable,
+            IERC165Upgradeable,
+            GovernorTimelockControlUpgradeable
+        )
         returns (bool)
     {
-        return GovernorTimelockControlUpgradeable.supportsInterface(interfaceId);
+        return
+            GovernorTimelockControlUpgradeable.supportsInterface(interfaceId);
     }
 
     /**
@@ -234,7 +296,11 @@ contract BSCGovernor is
     )
         public
         view
-        override(GovernorUpgradeable, IGovernorUpgradeable, GovernorTimelockControlUpgradeable)
+        override(
+            GovernorUpgradeable,
+            IGovernorUpgradeable,
+            GovernorTimelockControlUpgradeable
+        )
         returns (ProposalState)
     {
         return GovernorTimelockControlUpgradeable.state(proposalId);
@@ -262,16 +328,24 @@ contract BSCGovernor is
     )
         public
         view
-        override(IGovernorUpgradeable, GovernorUpgradeable, GovernorPreventLateQuorumUpgradeable)
+        override(
+            IGovernorUpgradeable,
+            GovernorUpgradeable,
+            GovernorPreventLateQuorumUpgradeable
+        )
         returns (uint256)
     {
-        return GovernorPreventLateQuorumUpgradeable.proposalDeadline(proposalId);
+        return
+            GovernorPreventLateQuorumUpgradeable.proposalDeadline(proposalId);
     }
 
     /*----------------- internal functions -----------------*/
     function _checkAndStartPropose() internal {
         if (!proposeStarted) {
-            if (IGovToken(GOV_TOKEN_ADDR).totalSupply() < PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD) {
+            if (
+                IGovToken(GOV_TOKEN_ADDR).totalSupply() <
+                PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD
+            ) {
                 revert TotalSupplyNotEnough();
             }
             proposeStarted = true;
@@ -284,12 +358,23 @@ contract BSCGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(GovernorUpgradeable, GovernorTimelockControlUpgradeable) whenNotPaused notInBlackList {
+    )
+        internal
+        override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
+        whenNotPaused
+        notInBlackList
+    {
         for (uint256 i = 0; i < targets.length; i++) {
             if (!whitelistTargets[targets[i]]) revert NotWhitelisted();
         }
 
-        GovernorTimelockControlUpgradeable._execute(proposalId, targets, values, calldatas, descriptionHash);
+        GovernorTimelockControlUpgradeable._execute(
+            proposalId,
+            targets,
+            values,
+            calldatas,
+            descriptionHash
+        );
     }
 
     function _cancel(
@@ -297,8 +382,18 @@ contract BSCGovernor is
         uint256[] memory values,
         bytes[] memory calldatas,
         bytes32 descriptionHash
-    ) internal override(GovernorUpgradeable, GovernorTimelockControlUpgradeable) returns (uint256) {
-        return GovernorTimelockControlUpgradeable._cancel(targets, values, calldatas, descriptionHash);
+    )
+        internal
+        override(GovernorUpgradeable, GovernorTimelockControlUpgradeable)
+        returns (uint256)
+    {
+        return
+            GovernorTimelockControlUpgradeable._cancel(
+                targets,
+                values,
+                calldatas,
+                descriptionHash
+            );
     }
 
     function _castVote(
@@ -319,7 +414,14 @@ contract BSCGovernor is
         // voter cannot bypass the freeze via castVoteBySig / castVoteWithReasonAndParamsBySig submitted
         // by a clean relayer. Direct castVote is unaffected (account == msg.sender).
         if (blackList[account]) revert InBlackList();
-        return GovernorPreventLateQuorumUpgradeable._castVote(proposalId, account, support, reason, params);
+        return
+            GovernorPreventLateQuorumUpgradeable._castVote(
+                proposalId,
+                account,
+                support,
+                reason,
+                params
+            );
     }
 
     function _executor()
