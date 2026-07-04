@@ -18,8 +18,8 @@ contract GovToken is
     ERC20VotesUpgradeable
 {
     /*----------------- constants -----------------*/
-    string private constant NAME = "BSC Governance Token";
-    string private constant SYMBOL = "govBNB";
+    string private constant NAME = "Dorsen Governance Token";
+    string private constant SYMBOL = "govDC";
 
     /*----------------- errors -----------------*/
     // @notice signature: 0x8cd22d19
@@ -56,7 +56,10 @@ contract GovToken is
      * @param stakeCredits the stakeCredit Token contracts
      * @param account the account to sync gov tokens to
      */
-    function syncBatch(address[] calldata stakeCredits, address account) external onlyStakeHub {
+    function syncBatch(
+        address[] calldata stakeCredits,
+        address account
+    ) external onlyStakeHub {
         uint256 _length = stakeCredits.length;
         for (uint256 i = 0; i < _length; ++i) {
             _sync(stakeCredits[i], account);
@@ -68,13 +71,14 @@ contract GovToken is
      * @param delegator the delegator
      * @param delegatee the delegatee
      */
-    function delegateVote(address delegator, address delegatee) external onlyStakeHub {
+    function delegateVote(
+        address delegator,
+        address delegatee
+    ) external onlyStakeHub {
         _delegate(delegator, delegatee);
     }
 
-    function burn(
-        uint256
-    ) public pure override {
+    function burn(uint256) public pure override {
         revert BurnNotAllowed();
     }
 
@@ -84,7 +88,9 @@ contract GovToken is
 
     /*----------------- internal functions -----------------*/
     function _sync(address stakeCredit, address account) internal {
-        uint256 latestBNBAmount = IStakeCredit(stakeCredit).getPooledBNB(account);
+        uint256 latestBNBAmount = IStakeCredit(stakeCredit).getPooledBNB(
+            account
+        );
         uint256 _mintedAmount = mintedMap[stakeCredit][account];
 
         if (_mintedAmount < latestBNBAmount) {
@@ -114,11 +120,17 @@ contract GovToken is
         ERC20VotesUpgradeable._afterTokenTransfer(from, to, amount);
     }
 
-    function _mint(address to, uint256 amount) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
+    function _mint(
+        address to,
+        uint256 amount
+    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
         ERC20VotesUpgradeable._mint(to, amount);
     }
 
-    function _burn(address account, uint256 amount) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
+    function _burn(
+        address account,
+        uint256 amount
+    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
         ERC20VotesUpgradeable._burn(account, amount);
     }
 }
