@@ -110,6 +110,9 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     uint256 public downtimeJailTime;
     uint256 public felonyJailTime;
 
+    // treasure validator fee
+    address public lockAmountTreasuryAddress;
+
     // validator operator address set
     EnumerableSet.AddressSet private _validatorSet;
     // validator operator address => validator info
@@ -207,13 +210,35 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address indexed creditContract,
         bytes voteAddress
     );
-    event StakeCreditInitialized(address indexed operatorAddress, address indexed creditContract);
-    event ConsensusAddressEdited(address indexed operatorAddress, address indexed newConsensusAddress);
-    event CommissionRateEdited(address indexed operatorAddress, uint64 newCommissionRate);
+    event StakeCreditInitialized(
+        address indexed operatorAddress,
+        address indexed creditContract
+    );
+    event ConsensusAddressEdited(
+        address indexed operatorAddress,
+        address indexed newConsensusAddress
+    );
+    event CommissionRateEdited(
+        address indexed operatorAddress,
+        uint64 newCommissionRate
+    );
     event DescriptionEdited(address indexed operatorAddress);
-    event VoteAddressEdited(address indexed operatorAddress, bytes newVoteAddress);
-    event Delegated(address indexed operatorAddress, address indexed delegator, uint256 shares, uint256 bnbAmount);
-    event Undelegated(address indexed operatorAddress, address indexed delegator, uint256 shares, uint256 bnbAmount);
+    event VoteAddressEdited(
+        address indexed operatorAddress,
+        bytes newVoteAddress
+    );
+    event Delegated(
+        address indexed operatorAddress,
+        address indexed delegator,
+        uint256 shares,
+        uint256 bnbAmount
+    );
+    event Undelegated(
+        address indexed operatorAddress,
+        address indexed delegator,
+        uint256 shares,
+        uint256 bnbAmount
+    );
     event Redelegated(
         address indexed srcValidator,
         address indexed dstValidator,
@@ -223,31 +248,52 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         uint256 bnbAmount
     );
     event RewardDistributed(address indexed operatorAddress, uint256 reward);
-    event RewardDistributeFailed(address indexed operatorAddress, bytes failReason);
+    event RewardDistributeFailed(
+        address indexed operatorAddress,
+        bytes failReason
+    );
     event ValidatorSlashed(
-        address indexed operatorAddress, uint256 jailUntil, uint256 slashAmount, SlashType slashType
+        address indexed operatorAddress,
+        uint256 jailUntil,
+        uint256 slashAmount,
+        SlashType slashType
     );
     event ValidatorJailed(address indexed operatorAddress);
     event ValidatorEmptyJailed(address indexed operatorAddress);
     event ValidatorUnjailed(address indexed operatorAddress);
-    event Claimed(address indexed operatorAddress, address indexed delegator, uint256 bnbAmount);
-    event AgentChanged(address indexed operatorAddress, address indexed oldAgent, address indexed newAgent);
+    event Claimed(
+        address indexed operatorAddress,
+        address indexed delegator,
+        uint256 bnbAmount
+    );
+    event AgentChanged(
+        address indexed operatorAddress,
+        address indexed oldAgent,
+        address indexed newAgent
+    );
 
     // Events for adding and removing NodeIDs.
     event NodeIDAdded(address indexed validator, bytes32 nodeID);
     event NodeIDRemoved(address indexed validator, bytes32 nodeID);
 
-    event MigrateSuccess(address indexed operatorAddress, address indexed delegator, uint256 shares, uint256 bnbAmount); // @dev deprecated
+    event MigrateSuccess(
+        address indexed operatorAddress,
+        address indexed delegator,
+        uint256 shares,
+        uint256 bnbAmount
+    ); // @dev deprecated
     event MigrateFailed(
-        address indexed operatorAddress, address indexed delegator, uint256 bnbAmount, StakeMigrationRespCode respCode
+        address indexed operatorAddress,
+        address indexed delegator,
+        uint256 bnbAmount,
+        StakeMigrationRespCode respCode
     ); // @dev deprecated
     event UnexpectedPackage(uint8 channelId, bytes msgBytes); // @dev deprecated
 
     /*----------------- modifiers -----------------*/
-    modifier validatorExist(
-        address operatorAddress
-    ) {
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted();
+    modifier validatorExist(address operatorAddress) {
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted();
         _;
     }
 
@@ -267,33 +313,48 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      */
     function initialize() external initializer onlyCoinbase onlyZeroGasPrice {
         transferGasLimit = 5000;
-        minSelfDelegationBNB = 2_000 ether;
+        minSelfDelegationBNB = 50 ether;
         minDelegationBNBChange = 1 ether;
         maxElectedValidators = 45;
         unbondPeriod = 7 days;
         redelegateFeeRate = 2;
-        downtimeSlashAmount = 10 ether;
-        felonySlashAmount = 200 ether;
+        downtimeSlashAmount = 0.1 ether;
+        felonySlashAmount = 2 ether;
         downtimeJailTime = 2 days;
         felonyJailTime = 30 days;
         maxFelonyBetweenBreatheBlock = 2;
         // Different address will be set depending on the environment
-        __Protectable_init_unchained(0x08E68Ec70FA3b629784fDB28887e206ce8561E08);
+        __Protectable_init_unchained(
+            0x08E68Ec70FA3b629784fDB28887e206ce8561E08
+        );
+        lockAmountTreasuryAddress = 0x000000000000000000000000000000000000dEaD;
     }
 
     /*----------------- Implement cross chain app -----------------*/
     function handleSynPackage(
         uint8,
         bytes calldata msgBytes
-    ) external onlyCrossChainContract whenNotPaused enableReceivingFund returns (bytes memory) {
+    )
+        external
+        onlyCrossChainContract
+        whenNotPaused
+        enableReceivingFund
+        returns (bytes memory)
+    {
         revert("deprecated");
     }
 
-    function handleAckPackage(uint8 channelId, bytes calldata msgBytes) external onlyCrossChainContract {
+    function handleAckPackage(
+        uint8 channelId,
+        bytes calldata msgBytes
+    ) external onlyCrossChainContract {
         revert("deprecated");
     }
 
-    function handleFailAckPackage(uint8 channelId, bytes calldata msgBytes) external onlyCrossChainContract {
+    function handleFailAckPackage(
+        uint8 channelId,
+        bytes calldata msgBytes
+    ) external onlyCrossChainContract {
         revert("deprecated");
     }
 
@@ -341,7 +402,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         // basic check
         address operatorAddress = msg.sender;
         if (_validatorSet.contains(operatorAddress)) revert ValidatorExisted();
-        if (agentToOperator[operatorAddress] != address(0)) revert InvalidValidator();
+        if (agentToOperator[operatorAddress] != address(0))
+            revert InvalidValidator();
 
         if (consensusToOperator[consensusAddress] != address(0)) {
             revert DuplicateConsensusAddress();
@@ -357,15 +419,20 @@ contract StakeHub is SystemV2, Initializable, Protectable {
 
         if (consensusAddress == address(0)) revert InvalidConsensusAddress();
         if (
-            commission.maxRate > 5_000 || commission.rate > commission.maxRate
-                || commission.maxChangeRate > commission.maxRate
+            commission.maxRate > 5_000 ||
+            commission.rate > commission.maxRate ||
+            commission.maxChangeRate > commission.maxRate
         ) revert InvalidCommission();
         if (!_checkMoniker(description.moniker)) revert InvalidMoniker();
         // proof-of-possession verify
-        if (!_checkVoteAddress(operatorAddress, voteAddress, blsProof)) revert InvalidVoteAddress();
+        if (!_checkVoteAddress(operatorAddress, voteAddress, blsProof))
+            revert InvalidVoteAddress();
 
         // deploy stake credit proxy contract
-        address creditContract = _deployStakeCredit(operatorAddress, description.moniker);
+        address creditContract = _deployStakeCredit(
+            operatorAddress,
+            description.moniker
+        );
 
         _validatorSet.add(operatorAddress);
         _monikerSet[monikerHash] = true;
@@ -381,9 +448,18 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         consensusToOperator[consensusAddress] = operatorAddress;
         voteToOperator[voteAddress] = operatorAddress;
 
-        emit ValidatorCreated(consensusAddress, operatorAddress, creditContract, voteAddress);
-        emit Delegated(operatorAddress, operatorAddress, delegation, delegation);
-        emit Delegated(operatorAddress, DEAD_ADDRESS, LOCK_AMOUNT, LOCK_AMOUNT);
+        emit ValidatorCreated(
+            consensusAddress,
+            operatorAddress,
+            creditContract,
+            voteAddress
+        );
+        emit Delegated(
+            operatorAddress,
+            operatorAddress,
+            delegation,
+            delegation
+        );
 
         IGovToken(GOV_TOKEN_ADDR).sync(creditContract, operatorAddress);
     }
@@ -401,7 +477,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
 
         address operatorAddress = _bep410MsgSender();
         Validator storage valInfo = _validators[operatorAddress];
-        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp) revert UpdateTooFrequently();
+        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp)
+            revert UpdateTooFrequently();
 
         consensusExpiration[valInfo.consensusAddress] = block.timestamp;
         valInfo.consensusAddress = newConsensusAddress;
@@ -419,13 +496,16 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     ) external whenNotPaused notInBlackList validatorExist(_bep410MsgSender()) {
         address operatorAddress = _bep410MsgSender();
         Validator storage valInfo = _validators[operatorAddress];
-        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp) revert UpdateTooFrequently();
+        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp)
+            revert UpdateTooFrequently();
 
-        if (commissionRate > valInfo.commission.maxRate) revert InvalidCommission();
+        if (commissionRate > valInfo.commission.maxRate)
+            revert InvalidCommission();
         uint256 changeRate = commissionRate >= valInfo.commission.rate
             ? commissionRate - valInfo.commission.rate
             : valInfo.commission.rate - commissionRate;
-        if (changeRate > valInfo.commission.maxChangeRate) revert InvalidCommission();
+        if (changeRate > valInfo.commission.maxChangeRate)
+            revert InvalidCommission();
 
         valInfo.commission.rate = commissionRate;
         valInfo.updateTime = block.timestamp;
@@ -442,7 +522,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     ) external whenNotPaused notInBlackList validatorExist(_bep410MsgSender()) {
         address operatorAddress = _bep410MsgSender();
         Validator storage valInfo = _validators[operatorAddress];
-        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp) revert UpdateTooFrequently();
+        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp)
+            revert UpdateTooFrequently();
 
         description.moniker = valInfo.description.moniker;
         valInfo.description = description;
@@ -461,13 +542,15 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     ) external whenNotPaused notInBlackList validatorExist(_bep410MsgSender()) {
         // proof-of-possession verify
         address operatorAddress = _bep410MsgSender();
-        if (!_checkVoteAddress(operatorAddress, newVoteAddress, blsProof)) revert InvalidVoteAddress();
+        if (!_checkVoteAddress(operatorAddress, newVoteAddress, blsProof))
+            revert InvalidVoteAddress();
         if (voteToOperator[newVoteAddress] != address(0)) {
             revert DuplicateVoteAddress();
         }
 
         Validator storage valInfo = _validators[operatorAddress];
-        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp) revert UpdateTooFrequently();
+        if (valInfo.updateTime + BREATHE_BLOCK_INTERVAL > block.timestamp)
+            revert UpdateTooFrequently();
 
         voteExpiration[valInfo.voteAddress] = block.timestamp;
         valInfo.voteAddress = newVoteAddress;
@@ -486,7 +569,10 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         Validator storage valInfo = _validators[operatorAddress];
         if (!valInfo.jailed) revert ValidatorNotJailed();
 
-        if (IStakeCredit(valInfo.creditContract).getPooledBNB(operatorAddress) < minSelfDelegationBNB) {
+        if (
+            IStakeCredit(valInfo.creditContract).getPooledBNB(operatorAddress) <
+            minSelfDelegationBNB
+        ) {
             revert SelfDelegationNotEnough();
         }
         if (valInfo.jailUntil > block.timestamp) revert JailTimeNotExpired();
@@ -503,15 +589,25 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     function delegate(
         address operatorAddress,
         bool delegateVotePower
-    ) external payable whenNotPaused notInBlackList validatorExist(operatorAddress) {
+    )
+        external
+        payable
+        whenNotPaused
+        notInBlackList
+        validatorExist(operatorAddress)
+    {
         uint256 bnbAmount = msg.value;
-        if (bnbAmount < minDelegationBNBChange) revert DelegationAmountTooSmall();
+        if (bnbAmount < minDelegationBNBChange)
+            revert DelegationAmountTooSmall();
 
         address delegator = msg.sender;
         Validator memory valInfo = _validators[operatorAddress];
-        if (valInfo.jailed && delegator != operatorAddress) revert OnlySelfDelegation();
+        if (valInfo.jailed && delegator != operatorAddress)
+            revert OnlySelfDelegation();
 
-        uint256 shares = IStakeCredit(valInfo.creditContract).delegate{ value: bnbAmount }(delegator);
+        uint256 shares = IStakeCredit(valInfo.creditContract).delegate{
+            value: bnbAmount
+        }(delegator);
         emit Delegated(operatorAddress, delegator, shares, bnbAmount);
 
         IGovToken(GOV_TOKEN_ADDR).sync(valInfo.creditContract, delegator);
@@ -534,7 +630,10 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address delegator = msg.sender;
         Validator memory valInfo = _validators[operatorAddress];
 
-        uint256 bnbAmount = IStakeCredit(valInfo.creditContract).undelegate(delegator, shares);
+        uint256 bnbAmount = IStakeCredit(valInfo.creditContract).undelegate(
+            delegator,
+            shares
+        );
         emit Undelegated(operatorAddress, delegator, shares, bnbAmount);
 
         if (delegator == operatorAddress) {
@@ -569,25 +668,41 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address delegator = msg.sender;
         Validator memory srcValInfo = _validators[srcValidator];
         Validator memory dstValInfo = _validators[dstValidator];
-        if (dstValInfo.jailed && delegator != dstValidator) revert OnlySelfDelegation();
+        if (dstValInfo.jailed && delegator != dstValidator)
+            revert OnlySelfDelegation();
 
-        uint256 bnbAmount = IStakeCredit(srcValInfo.creditContract).unbond(delegator, shares);
-        if (bnbAmount < minDelegationBNBChange) revert DelegationAmountTooSmall();
+        uint256 bnbAmount = IStakeCredit(srcValInfo.creditContract).unbond(
+            delegator,
+            shares
+        );
+        if (bnbAmount < minDelegationBNBChange)
+            revert DelegationAmountTooSmall();
         // check if the srcValidator has enough self delegation
         if (
-            delegator == srcValidator
-                && IStakeCredit(srcValInfo.creditContract).getPooledBNB(srcValidator) < minSelfDelegationBNB
+            delegator == srcValidator &&
+            IStakeCredit(srcValInfo.creditContract).getPooledBNB(srcValidator) <
+            minSelfDelegationBNB
         ) {
             revert SelfDelegationNotEnough();
         }
 
-        uint256 feeCharge = bnbAmount * redelegateFeeRate / REDELEGATE_FEE_RATE_BASE;
-        (bool success,) = dstValInfo.creditContract.call{ value: feeCharge }("");
+        uint256 feeCharge = (bnbAmount * redelegateFeeRate) /
+            REDELEGATE_FEE_RATE_BASE;
+        (bool success, ) = dstValInfo.creditContract.call{value: feeCharge}("");
         if (!success) revert TransferFailed();
 
         bnbAmount -= feeCharge;
-        uint256 newShares = IStakeCredit(dstValInfo.creditContract).delegate{ value: bnbAmount }(delegator);
-        emit Redelegated(srcValidator, dstValidator, delegator, shares, newShares, bnbAmount);
+        uint256 newShares = IStakeCredit(dstValInfo.creditContract).delegate{
+            value: bnbAmount
+        }(delegator);
+        emit Redelegated(
+            srcValidator,
+            dstValidator,
+            delegator,
+            shares,
+            newShares,
+            bnbAmount
+        );
 
         address[] memory stakeCredits = new address[](2);
         stakeCredits[0] = srcValInfo.creditContract;
@@ -603,7 +718,10 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      * @param operatorAddress the operator address of the validator
      * @param requestNumber the request number of the undelegation. 0 means claim all
      */
-    function claim(address operatorAddress, uint256 requestNumber) external whenNotPaused notInBlackList {
+    function claim(
+        address operatorAddress,
+        uint256 requestNumber
+    ) external whenNotPaused notInBlackList {
         _claim(operatorAddress, requestNumber);
     }
 
@@ -616,7 +734,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address[] calldata operatorAddresses,
         uint256[] calldata requestNumbers
     ) external whenNotPaused notInBlackList {
-        if (operatorAddresses.length != requestNumbers.length) revert InvalidRequest();
+        if (operatorAddresses.length != requestNumbers.length)
+            revert InvalidRequest();
         for (uint256 i; i < operatorAddresses.length; ++i) {
             _claim(operatorAddresses[i], requestNumbers[i]);
         }
@@ -635,7 +754,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address[] memory stakeCredits = new address[](_length);
         address credit;
         for (uint256 i = 0; i < _length; ++i) {
-            if (!_validatorSet.contains(operatorAddresses[i])) revert ValidatorNotExisted();
+            if (!_validatorSet.contains(operatorAddresses[i]))
+                revert ValidatorNotExisted();
             credit = _validators[operatorAddresses[i]].creditContract;
             stakeCredits[i] = credit;
         }
@@ -653,12 +773,14 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address operatorAddress = consensusToOperator[consensusAddress];
         Validator memory valInfo = _validators[operatorAddress];
         if (valInfo.creditContract == address(0) || valInfo.jailed) {
-            SYSTEM_REWARD_ADDR.call{ value: msg.value }("");
+            SYSTEM_REWARD_ADDR.call{value: msg.value}("");
             emit RewardDistributeFailed(operatorAddress, "INVALID_VALIDATOR");
             return;
         }
 
-        IStakeCredit(valInfo.creditContract).distributeReward{ value: msg.value }(valInfo.commission.rate);
+        IStakeCredit(valInfo.creditContract).distributeReward{value: msg.value}(
+            valInfo.commission.rate
+        );
         emit RewardDistributed(operatorAddress, msg.value);
 
         IGovToken(GOV_TOKEN_ADDR).sync(valInfo.creditContract, operatorAddress);
@@ -667,19 +789,25 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     /**
      * @dev Downtime slash. Only the `SlashIndicator` contract can call this function.
      */
-    function downtimeSlash(
-        address consensusAddress
-    ) external onlySlash {
+    function downtimeSlash(address consensusAddress) external onlySlash {
         address operatorAddress = consensusToOperator[consensusAddress];
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted(); // should never happen
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted(); // should never happen
         Validator storage valInfo = _validators[operatorAddress];
 
         // slash
-        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(downtimeSlashAmount);
+        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(
+            downtimeSlashAmount
+        );
         uint256 jailUntil = block.timestamp + downtimeJailTime;
         _jailValidator(valInfo, jailUntil);
 
-        emit ValidatorSlashed(operatorAddress, jailUntil, slashAmount, SlashType.DownTime);
+        emit ValidatorSlashed(
+            operatorAddress,
+            jailUntil,
+            slashAmount,
+            SlashType.DownTime
+        );
 
         IGovToken(GOV_TOKEN_ADDR).sync(valInfo.creditContract, operatorAddress);
     }
@@ -691,30 +819,47 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         bytes calldata voteAddress
     ) external onlySlash whenNotPaused {
         address operatorAddress = voteToOperator[voteAddress];
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted(); // should never happen
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted(); // should never happen
         Validator storage valInfo = _validators[operatorAddress];
 
         uint256 index = block.timestamp / BREATHE_BLOCK_INTERVAL;
         // This is to prevent many honest validators being slashed at the same time because of implementation bugs
-        if (_felonyMap[index] >= maxFelonyBetweenBreatheBlock) revert NoMoreFelonyAllowed();
+        if (_felonyMap[index] >= maxFelonyBetweenBreatheBlock)
+            revert NoMoreFelonyAllowed();
         _felonyMap[index] += 1;
 
         // check if the voteAddress has already expired
-        if (voteExpiration[voteAddress] != 0 && voteExpiration[voteAddress] + BREATHE_BLOCK_INTERVAL < block.timestamp)
-        {
+        if (
+            voteExpiration[voteAddress] != 0 &&
+            voteExpiration[voteAddress] + BREATHE_BLOCK_INTERVAL <
+            block.timestamp
+        ) {
             revert VoteAddressExpired();
         }
 
         // slash
-        (bool canSlash, uint256 jailUntil) = _checkFelonyRecord(operatorAddress, SlashType.MaliciousVote);
+        (bool canSlash, uint256 jailUntil) = _checkFelonyRecord(
+            operatorAddress,
+            SlashType.MaliciousVote
+        );
         if (!canSlash) revert AlreadySlashed();
-        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(felonySlashAmount);
+        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(
+            felonySlashAmount
+        );
         _jailValidator(valInfo, jailUntil);
         // Evict using the post-rotation consensus key; SlashIndicator's voteAddr-based
         // eviction covers the case where BSCValidatorSet has not yet synced K_new.
-        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(valInfo.consensusAddress);
+        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+            valInfo.consensusAddress
+        );
 
-        emit ValidatorSlashed(operatorAddress, jailUntil, slashAmount, SlashType.MaliciousVote);
+        emit ValidatorSlashed(
+            operatorAddress,
+            jailUntil,
+            slashAmount,
+            SlashType.MaliciousVote
+        );
 
         IGovToken(GOV_TOKEN_ADDR).sync(valInfo.creditContract, operatorAddress);
     }
@@ -726,32 +871,47 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         address consensusAddress
     ) external onlySlash whenNotPaused {
         address operatorAddress = consensusToOperator[consensusAddress];
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted(); // should never happen
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted(); // should never happen
         Validator storage valInfo = _validators[operatorAddress];
 
         uint256 index = block.timestamp / BREATHE_BLOCK_INTERVAL;
         // This is to prevent many honest validators being slashed at the same time because of implementation bugs
-        if (_felonyMap[index] >= maxFelonyBetweenBreatheBlock) revert NoMoreFelonyAllowed();
+        if (_felonyMap[index] >= maxFelonyBetweenBreatheBlock)
+            revert NoMoreFelonyAllowed();
         _felonyMap[index] += 1;
 
         // check if the consensusAddress has already expired
         if (
-            consensusExpiration[consensusAddress] != 0
-                && consensusExpiration[consensusAddress] + BREATHE_BLOCK_INTERVAL < block.timestamp
+            consensusExpiration[consensusAddress] != 0 &&
+            consensusExpiration[consensusAddress] + BREATHE_BLOCK_INTERVAL <
+            block.timestamp
         ) {
             revert ConsensusAddressExpired();
         }
 
         // slash
-        (bool canSlash, uint256 jailUntil) = _checkFelonyRecord(operatorAddress, SlashType.DoubleSign);
+        (bool canSlash, uint256 jailUntil) = _checkFelonyRecord(
+            operatorAddress,
+            SlashType.DoubleSign
+        );
         if (!canSlash) revert AlreadySlashed();
-        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(felonySlashAmount);
+        uint256 slashAmount = IStakeCredit(valInfo.creditContract).slash(
+            felonySlashAmount
+        );
         _jailValidator(valInfo, jailUntil);
         // Evict using the post-rotation consensus key; SlashIndicator's felony(K_old)
         // covers the case where BSCValidatorSet has not yet synced K_new.
-        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(valInfo.consensusAddress);
+        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+            valInfo.consensusAddress
+        );
 
-        emit ValidatorSlashed(operatorAddress, jailUntil, slashAmount, SlashType.DoubleSign);
+        emit ValidatorSlashed(
+            operatorAddress,
+            jailUntil,
+            slashAmount,
+            SlashType.DoubleSign
+        );
 
         IGovToken(GOV_TOKEN_ADDR).sync(valInfo.creditContract, operatorAddress);
     }
@@ -760,35 +920,47 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      * @param key the key of the param
      * @param value the value of the param
      */
-    function updateParam(string calldata key, bytes calldata value) external onlyGov {
+    function updateParam(
+        string calldata key,
+        bytes calldata value
+    ) external onlyGov {
         if (key.compareStrings("transferGasLimit")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newTransferGasLimit = value.bytesToUint256(32);
-            if (newTransferGasLimit < 2300 || newTransferGasLimit > 10_000) revert InvalidValue(key, value);
+            if (newTransferGasLimit < 2300 || newTransferGasLimit > 10_000)
+                revert InvalidValue(key, value);
             transferGasLimit = newTransferGasLimit;
         } else if (key.compareStrings("minSelfDelegationBNB")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newMinSelfDelegationBNB = value.bytesToUint256(32);
-            if (newMinSelfDelegationBNB < 1000 ether || newMinSelfDelegationBNB > 100_000 ether) {
+            if (
+                newMinSelfDelegationBNB < 1000 ether ||
+                newMinSelfDelegationBNB > 100_000 ether
+            ) {
                 revert InvalidValue(key, value);
             }
             minSelfDelegationBNB = newMinSelfDelegationBNB;
         } else if (key.compareStrings("minDelegationBNBChange")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newMinDelegationBNBChange = value.bytesToUint256(32);
-            if (newMinDelegationBNBChange < 0.1 ether || newMinDelegationBNBChange > 10 ether) {
+            if (
+                newMinDelegationBNBChange < 0.1 ether ||
+                newMinDelegationBNBChange > 10 ether
+            ) {
                 revert InvalidValue(key, value);
             }
             minDelegationBNBChange = newMinDelegationBNBChange;
         } else if (key.compareStrings("maxElectedValidators")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newMaxElectedValidators = value.bytesToUint256(32);
-            if (newMaxElectedValidators == 0 || newMaxElectedValidators > 500) revert InvalidValue(key, value);
+            if (newMaxElectedValidators == 0 || newMaxElectedValidators > 500)
+                revert InvalidValue(key, value);
             maxElectedValidators = newMaxElectedValidators;
         } else if (key.compareStrings("unbondPeriod")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newUnbondPeriod = value.bytesToUint256(32);
-            if (newUnbondPeriod < 3 days || newUnbondPeriod > 30 days) revert InvalidValue(key, value);
+            if (newUnbondPeriod < 3 days || newUnbondPeriod > 30 days)
+                revert InvalidValue(key, value);
             unbondPeriod = newUnbondPeriod;
         } else if (key.compareStrings("redelegateFeeRate")) {
             if (value.length != 32) revert InvalidValue(key, value);
@@ -800,26 +972,38 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         } else if (key.compareStrings("downtimeSlashAmount")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newDowntimeSlashAmount = value.bytesToUint256(32);
-            if (newDowntimeSlashAmount < 1 ether || newDowntimeSlashAmount >= felonySlashAmount) {
+            if (
+                newDowntimeSlashAmount < 1 ether ||
+                newDowntimeSlashAmount >= felonySlashAmount
+            ) {
                 revert InvalidValue(key, value);
             }
             downtimeSlashAmount = newDowntimeSlashAmount;
         } else if (key.compareStrings("felonySlashAmount")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newFelonySlashAmount = value.bytesToUint256(32);
-            if (newFelonySlashAmount < 10 ether || newFelonySlashAmount <= downtimeSlashAmount) {
+            if (
+                newFelonySlashAmount < 10 ether ||
+                newFelonySlashAmount <= downtimeSlashAmount
+            ) {
                 revert InvalidValue(key, value);
             }
             felonySlashAmount = newFelonySlashAmount;
         } else if (key.compareStrings("downtimeJailTime")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newDowntimeJailTime = value.bytesToUint256(32);
-            if (newDowntimeJailTime < 1 days || newDowntimeJailTime >= felonyJailTime) revert InvalidValue(key, value);
+            if (
+                newDowntimeJailTime < 1 days ||
+                newDowntimeJailTime >= felonyJailTime
+            ) revert InvalidValue(key, value);
             downtimeJailTime = newDowntimeJailTime;
         } else if (key.compareStrings("felonyJailTime")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newFelonyJailTime = value.bytesToUint256(32);
-            if (newFelonyJailTime < 3 days || newFelonyJailTime <= downtimeJailTime) revert InvalidValue(key, value);
+            if (
+                newFelonyJailTime < 3 days ||
+                newFelonyJailTime <= downtimeJailTime
+            ) revert InvalidValue(key, value);
             felonyJailTime = newFelonyJailTime;
         } else if (key.compareStrings("maxFelonyBetweenBreatheBlock")) {
             if (value.length != 32) revert InvalidValue(key, value);
@@ -829,8 +1013,15 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         } else if (key.compareStrings("stakeHubProtector")) {
             if (value.length != 20) revert InvalidValue(key, value);
             address newStakeHubProtector = value.bytesToAddress(20);
-            if (newStakeHubProtector == address(0)) revert InvalidValue(key, value);
+            if (newStakeHubProtector == address(0))
+                revert InvalidValue(key, value);
             _setProtector(newStakeHubProtector);
+        } else if (key.compareStrings("lockAmountTreasuryAddress")) {
+            if (value.length != 20) revert InvalidValue(key, value);
+            address newLockAmountTreasuryAddress = value.bytesToAddress(20);
+            if (newLockAmountTreasuryAddress == address(0))
+                revert InvalidValue(key, value);
+            lockAmountTreasuryAddress = newLockAmountTreasuryAddress;
         } else if (key.compareStrings("maxNodeIDs")) {
             if (value.length != 32) revert InvalidValue(key, value);
             uint256 newMaxNodeIDs = value.bytesToUint256(32);
@@ -849,9 +1040,15 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      *
      * @return the validator's reward of the day
      */
-    function getValidatorRewardRecord(address operatorAddress, uint256 index) external view returns (uint256) {
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted();
-        return IStakeCredit(_validators[operatorAddress].creditContract).rewardRecord(index);
+    function getValidatorRewardRecord(
+        address operatorAddress,
+        uint256 index
+    ) external view returns (uint256) {
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted();
+        return
+            IStakeCredit(_validators[operatorAddress].creditContract)
+                .rewardRecord(index);
     }
 
     /**
@@ -860,9 +1057,15 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      *
      * @return the validator's total pooled BNB of the day
      */
-    function getValidatorTotalPooledBNBRecord(address operatorAddress, uint256 index) external view returns (uint256) {
-        if (!_validatorSet.contains(operatorAddress)) revert ValidatorNotExisted();
-        return IStakeCredit(_validators[operatorAddress].creditContract).totalPooledBNBRecord(index);
+    function getValidatorTotalPooledBNBRecord(
+        address operatorAddress,
+        uint256 index
+    ) external view returns (uint256) {
+        if (!_validatorSet.contains(operatorAddress))
+            revert ValidatorNotExisted();
+        return
+            IStakeCredit(_validators[operatorAddress].creditContract)
+                .totalPooledBNBRecord(index);
     }
 
     /**
@@ -878,14 +1081,24 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     function getValidators(
         uint256 offset,
         uint256 limit
-    ) external view returns (address[] memory operatorAddrs, address[] memory creditAddrs, uint256 totalLength) {
+    )
+        external
+        view
+        returns (
+            address[] memory operatorAddrs,
+            address[] memory creditAddrs,
+            uint256 totalLength
+        )
+    {
         totalLength = _validatorSet.length();
         if (offset >= totalLength) {
             return (operatorAddrs, creditAddrs, totalLength);
         }
 
         limit = limit == 0 ? totalLength : limit;
-        uint256 count = (totalLength - offset) > limit ? limit : (totalLength - offset);
+        uint256 count = (totalLength - offset) > limit
+            ? limit
+            : (totalLength - offset);
         operatorAddrs = new address[](count);
         creditAddrs = new address[](count);
         for (uint256 i; i < count; ++i) {
@@ -947,7 +1160,11 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      */
     function getValidatorBasicInfo(
         address operatorAddress
-    ) external view returns (uint256 createdTime, bool jailed, uint256 jailUntil) {
+    )
+        external
+        view
+        returns (uint256 createdTime, bool jailed, uint256 jailUntil)
+    {
         Validator memory valInfo = _validators[operatorAddress];
         createdTime = valInfo.createdTime;
         jailed = valInfo.jailed;
@@ -961,7 +1178,12 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      */
     function getValidatorDescription(
         address operatorAddress
-    ) external view validatorExist(operatorAddress) returns (Description memory) {
+    )
+        external
+        view
+        validatorExist(operatorAddress)
+        returns (Description memory)
+    {
         return _validators[operatorAddress].description;
     }
 
@@ -972,7 +1194,12 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      */
     function getValidatorCommission(
         address operatorAddress
-    ) external view validatorExist(operatorAddress) returns (Commission memory) {
+    )
+        external
+        view
+        validatorExist(operatorAddress)
+        returns (Commission memory)
+    {
         return _validators[operatorAddress].commission;
     }
 
@@ -1030,7 +1257,9 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         }
 
         limit = limit == 0 ? totalLength : limit;
-        uint256 count = (totalLength - offset) > limit ? limit : (totalLength - offset);
+        uint256 count = (totalLength - offset) > limit
+            ? limit
+            : (totalLength - offset);
         consensusAddrs = new address[](count);
         votingPowers = new uint256[](count);
         voteAddrs = new bytes[](count);
@@ -1038,7 +1267,9 @@ contract StakeHub is SystemV2, Initializable, Protectable {
             address operatorAddress = _validatorSet.at(offset + i);
             Validator memory valInfo = _validators[operatorAddress];
             consensusAddrs[i] = valInfo.consensusAddress;
-            votingPowers[i] = valInfo.jailed ? 0 : IStakeCredit(valInfo.creditContract).totalPooledBNB();
+            votingPowers[i] = valInfo.jailed
+                ? 0
+                : IStakeCredit(valInfo.creditContract).totalPooledBNB();
             voteAddrs[i] = valInfo.voteAddress;
         }
     }
@@ -1141,7 +1372,14 @@ contract StakeHub is SystemV2, Initializable, Protectable {
      */
     function getNodeIDs(
         address[] calldata validatorsToQuery
-    ) external view returns (address[] memory consensusAddresses, bytes32[][] memory nodeIDsList) {
+    )
+        external
+        view
+        returns (
+            address[] memory consensusAddresses,
+            bytes32[][] memory nodeIDsList
+        )
+    {
         uint256 len = validatorsToQuery.length;
         consensusAddresses = new address[](len);
         nodeIDsList = new bytes32[][](len);
@@ -1157,9 +1395,7 @@ contract StakeHub is SystemV2, Initializable, Protectable {
     }
 
     /*----------------- internal functions -----------------*/
-    function _checkMoniker(
-        string memory moniker
-    ) internal pure returns (bool) {
+    function _checkMoniker(string memory moniker) internal pure returns (bool) {
         bytes memory bz = bytes(moniker);
 
         // 1. moniker length should be between 3 and 9
@@ -1176,8 +1412,9 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         for (uint256 i = 1; i < bz.length; ++i) {
             // Check if the ASCII value of the character falls outside the range of alphanumeric characters
             if (
-                (uint8(bz[i]) < 48 || uint8(bz[i]) > 57) && (uint8(bz[i]) < 65 || uint8(bz[i]) > 90)
-                    && (uint8(bz[i]) < 97 || uint8(bz[i]) > 122)
+                (uint8(bz[i]) < 48 || uint8(bz[i]) > 57) &&
+                (uint8(bz[i]) < 65 || uint8(bz[i]) > 90) &&
+                (uint8(bz[i]) < 97 || uint8(bz[i]) > 122)
             ) {
                 // Character is a special character
                 return false;
@@ -1193,12 +1430,17 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         bytes calldata voteAddress,
         bytes calldata blsProof
     ) internal view returns (bool) {
-        if (voteAddress.length != BLS_PUBKEY_LENGTH || blsProof.length != BLS_SIG_LENGTH) {
+        if (
+            voteAddress.length != BLS_PUBKEY_LENGTH ||
+            blsProof.length != BLS_SIG_LENGTH
+        ) {
             return false;
         }
 
         // get msg hash
-        bytes32 msgHash = keccak256(abi.encodePacked(operatorAddress, voteAddress, block.chainid));
+        bytes32 msgHash = keccak256(
+            abi.encodePacked(operatorAddress, voteAddress, block.chainid)
+        );
         bytes memory msgBz = new bytes(32);
         assembly {
             mstore(add(msgBz, 32), msgHash)
@@ -1210,7 +1452,18 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         bytes memory output = new bytes(1);
         assembly {
             let len := mload(input)
-            if iszero(staticcall(not(0), 0x66, add(input, 0x20), len, add(output, 0x20), 0x01)) { revert(0, 0) }
+            if iszero(
+                staticcall(
+                    not(0),
+                    0x66,
+                    add(input, 0x20),
+                    len,
+                    add(output, 0x20),
+                    0x01
+                )
+            ) {
+                revert(0, 0)
+            }
         }
         uint8 result = uint8(output[0]);
         if (result != uint8(1)) {
@@ -1219,29 +1472,45 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         return true;
     }
 
-    function _deployStakeCredit(address operatorAddress, string memory moniker) internal returns (address) {
-        address creditProxy = address(new TransparentUpgradeableProxy(STAKE_CREDIT_ADDR, DEAD_ADDRESS, ""));
-        IStakeCredit(creditProxy).initialize{ value: msg.value }(operatorAddress, moniker);
+    function _deployStakeCredit(
+        address operatorAddress,
+        string memory moniker
+    ) internal returns (address) {
+        address creditProxy = address(
+            new TransparentUpgradeableProxy(STAKE_CREDIT_ADDR, DEAD_ADDRESS, "")
+        );
+        IStakeCredit(creditProxy).initialize{value: msg.value}(
+            operatorAddress,
+            moniker
+        );
         emit StakeCreditInitialized(operatorAddress, creditProxy);
 
         return creditProxy;
     }
 
-    function _checkValidatorSelfDelegation(
-        address operatorAddress
-    ) internal {
+    function _checkValidatorSelfDelegation(address operatorAddress) internal {
         Validator storage valInfo = _validators[operatorAddress];
         if (valInfo.jailed) {
             return;
         }
-        if (IStakeCredit(valInfo.creditContract).getPooledBNB(operatorAddress) < minSelfDelegationBNB) {
+        if (
+            IStakeCredit(valInfo.creditContract).getPooledBNB(operatorAddress) <
+            minSelfDelegationBNB
+        ) {
             _jailValidator(valInfo, block.timestamp + downtimeJailTime);
-            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(valInfo.consensusAddress);
+            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+                valInfo.consensusAddress
+            );
         }
     }
 
-    function _checkFelonyRecord(address operatorAddress, SlashType slashType) internal returns (bool, uint256) {
-        bytes32 slashKey = keccak256(abi.encodePacked(operatorAddress, slashType));
+    function _checkFelonyRecord(
+        address operatorAddress,
+        SlashType slashType
+    ) internal returns (bool, uint256) {
+        bytes32 slashKey = keccak256(
+            abi.encodePacked(operatorAddress, slashType)
+        );
         uint256 jailUntil = _felonyRecords[slashKey];
         // for double sign and malicious vote slash
         // if the validator is already jailed, no need to slash again
@@ -1253,7 +1522,10 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         return (true, jailUntil);
     }
 
-    function _jailValidator(Validator storage valInfo, uint256 jailUntil) internal {
+    function _jailValidator(
+        Validator storage valInfo,
+        uint256 jailUntil
+    ) internal {
         // keep the last eligible validator
         bool isLast = (numOfJailed >= _validatorSet.length() - 1);
         if (isLast) {
@@ -1274,8 +1546,13 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         }
     }
 
-    function _claim(address operatorAddress, uint256 requestNumber) internal validatorExist(operatorAddress) {
-        uint256 bnbAmount = IStakeCredit(_validators[operatorAddress].creditContract).claim(msg.sender, requestNumber);
+    function _claim(
+        address operatorAddress,
+        uint256 requestNumber
+    ) internal validatorExist(operatorAddress) {
+        uint256 bnbAmount = IStakeCredit(
+            _validators[operatorAddress].creditContract
+        ).claim(msg.sender, requestNumber);
         emit Claimed(operatorAddress, msg.sender, bnbAmount);
     }
 
@@ -1291,7 +1568,10 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         // Rotated consensus addresses must no longer authorize validator-admin
         // actions, but the stale mapping is intentionally retained for system
         // paths such as slash/reward handling.
-        if (consensusToOperator[msg.sender] != address(0) && consensusExpiration[msg.sender] == 0) {
+        if (
+            consensusToOperator[msg.sender] != address(0) &&
+            consensusExpiration[msg.sender] == 0
+        ) {
             return consensusToOperator[msg.sender];
         }
 
