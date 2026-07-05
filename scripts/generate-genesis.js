@@ -10,6 +10,10 @@ program.version('0.0.1');
 program.option('-c, --chainId <chainId>', 'chain id', '714');
 program.option('-o, --output <output-file>', 'Genesis json file', './genesis.json');
 program.option('-t, --template <template>', 'Genesis template json', './genesis-template.json');
+program.option('--maxwellTime <time>', 'maxwell fork timestamp');
+program.option('--fermiTime <time>', 'fermi fork timestamp');
+program.option('--osakaTime <time>', 'osaka fork timestamp');
+program.option('--mendelTime <time>', 'mendel fork timestamp');
 program.parse(process.argv);
 
 // get byte code from compiled contract
@@ -61,6 +65,11 @@ Promise.all([
     initHolders: init_holders,
     extraData: web3.utils.bytesToHex(validators.extraValidatorBytes),
   };
+
+  if (program.maxwellTime !== undefined && program.maxwellTime !== '') data.maxwellTime = program.maxwellTime;
+  if (program.fermiTime !== undefined && program.fermiTime !== '') data.fermiTime = program.fermiTime;
+  if (program.osakaTime !== undefined && program.osakaTime !== '') data.osakaTime = program.osakaTime;
+  if (program.mendelTime !== undefined && program.mendelTime !== '') data.mendelTime = program.mendelTime;
 
   result.forEach((r) => {
     data[r.key] = r.compiledData;
