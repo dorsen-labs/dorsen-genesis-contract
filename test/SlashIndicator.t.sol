@@ -20,15 +20,15 @@ contract SlashIndicatorTest is Deployer {
 
     function setUp() public {
         burnRatio =
-            bscValidatorSet.isSystemRewardIncluded() ? bscValidatorSet.burnRatio() : bscValidatorSet.INIT_BURN_RATIO();
-        burnRatioScale = bscValidatorSet.BLOCK_FEES_RATIO_SCALE();
+            dorsenValidatorSet.isSystemRewardIncluded() ? dorsenValidatorSet.burnRatio() : dorsenValidatorSet.INIT_BURN_RATIO();
+        burnRatioScale = dorsenValidatorSet.BLOCK_FEES_RATIO_SCALE();
 
-        systemRewardBaseRatio = bscValidatorSet.isSystemRewardIncluded()
-            ? bscValidatorSet.systemRewardBaseRatio()
-            : bscValidatorSet.INIT_SYSTEM_REWARD_RATIO();
-        systemRewardRatioScale = bscValidatorSet.BLOCK_FEES_RATIO_SCALE();
+        systemRewardBaseRatio = dorsenValidatorSet.isSystemRewardIncluded()
+            ? dorsenValidatorSet.systemRewardBaseRatio()
+            : dorsenValidatorSet.INIT_SYSTEM_REWARD_RATIO();
+        systemRewardRatioScale = dorsenValidatorSet.BLOCK_FEES_RATIO_SCALE();
 
-        address[] memory validators = bscValidatorSet.getValidators();
+        address[] memory validators = dorsenValidatorSet.getValidators();
         validator0 = validators[0];
         validatorLast = validators[validators.length - 1];
 
@@ -76,7 +76,7 @@ contract SlashIndicatorTest is Deployer {
 
     function testMaintenance() public {
         vm.prank(validator0);
-        bscValidatorSet.enterMaintenance();
+        dorsenValidatorSet.enterMaintenance();
 
         (, uint256 countBefore) = slashIndicator.getSlashIndicator(validator0);
         vm.prank(coinbase);
@@ -86,11 +86,11 @@ contract SlashIndicatorTest is Deployer {
 
         vm.prank(validator0);
         vm.expectRevert(bytes("can not enter Temporary Maintenance"));
-        bscValidatorSet.enterMaintenance();
+        dorsenValidatorSet.enterMaintenance();
 
         // exit maintenance
         vm.prank(validator0);
-        bscValidatorSet.exitMaintenance();
+        dorsenValidatorSet.exitMaintenance();
         vm.roll(block.number + 1);
         vm.prank(coinbase);
         slashIndicator.slash(validator0);
@@ -99,7 +99,7 @@ contract SlashIndicatorTest is Deployer {
 
         vm.prank(validator0);
         vm.expectRevert(bytes("can not enter Temporary Maintenance"));
-        bscValidatorSet.enterMaintenance();
+        dorsenValidatorSet.enterMaintenance();
     }
 
     function testMisdemeanor() public {
@@ -107,12 +107,12 @@ contract SlashIndicatorTest is Deployer {
             _batchCreateValidators(21);
 
         vm.startPrank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         uint256 _deposit = 1 ether;
         uint256 _incoming = _calcIncoming(_deposit);
-        bscValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
-        assertEq(_incoming, bscValidatorSet.getIncoming(consensusAddrs[0]));
+        dorsenValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(consensusAddrs[0]));
 
         for (uint256 i; i < MISDEMEANOR_THRESHOLD; ++i) {
             vm.roll(block.number + 1);
@@ -120,7 +120,7 @@ contract SlashIndicatorTest is Deployer {
         }
         (, uint256 count) = slashIndicator.getSlashIndicator(consensusAddrs[0]);
         assertEq(MISDEMEANOR_THRESHOLD, count);
-        assertEq(0, bscValidatorSet.getIncoming(consensusAddrs[0]));
+        assertEq(0, dorsenValidatorSet.getIncoming(consensusAddrs[0]));
 
         // enter maintenance, cannot be slashed
         vm.roll(block.number + 1);
@@ -136,10 +136,10 @@ contract SlashIndicatorTest is Deployer {
             newVotingPowers[i] = votingPowers[i];
             newVoteAddrs[i] = voteAddrs[i];
         }
-        bscValidatorSet.updateValidatorSetV2(newVals, newVotingPowers, newVoteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(newVals, newVotingPowers, newVoteAddrs);
 
-        bscValidatorSet.deposit{ value: 2 ether }(newVals[0]);
-        assertEq(_incoming * 2, bscValidatorSet.getIncoming(newVals[0]));
+        dorsenValidatorSet.deposit{ value: 2 ether }(newVals[0]);
+        assertEq(_incoming * 2, dorsenValidatorSet.getIncoming(newVals[0]));
 
         // slash from the post-clean count up to the misdemeanor threshold (derived from
         // live state so it needn't be retuned when thresholds change)
@@ -150,28 +150,28 @@ contract SlashIndicatorTest is Deployer {
         }
         (, count) = slashIndicator.getSlashIndicator(newVals[0]);
         assertEq(MISDEMEANOR_THRESHOLD, count);
-        assertEq(0, bscValidatorSet.getIncoming(newVals[0]));
-        assertEq(_incoming, bscValidatorSet.getIncoming(newVals[1]));
-        assertEq(_incoming, bscValidatorSet.getIncoming(newVals[2]));
+        assertEq(0, dorsenValidatorSet.getIncoming(newVals[0]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(newVals[1]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(newVals[2]));
 
-        bscValidatorSet.deposit{ value: _deposit }(newVals[1]);
-        assertEq(_incoming * 2, bscValidatorSet.getIncoming(newVals[1]));
+        dorsenValidatorSet.deposit{ value: _deposit }(newVals[1]);
+        assertEq(_incoming * 2, dorsenValidatorSet.getIncoming(newVals[1]));
         for (uint256 i; i < MISDEMEANOR_THRESHOLD; ++i) {
             vm.roll(block.number + 1);
             slashIndicator.slash(newVals[1]);
         }
-        assertEq(_incoming, bscValidatorSet.getIncoming(newVals[0]));
-        assertEq(0, bscValidatorSet.getIncoming(newVals[1]));
-        assertEq(_incoming * 2, bscValidatorSet.getIncoming(newVals[2]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(newVals[0]));
+        assertEq(0, dorsenValidatorSet.getIncoming(newVals[1]));
+        assertEq(_incoming * 2, dorsenValidatorSet.getIncoming(newVals[2]));
 
-        assertEq(_incoming * 2, bscValidatorSet.getIncoming(newVals[2]));
+        assertEq(_incoming * 2, dorsenValidatorSet.getIncoming(newVals[2]));
         for (uint256 i; i < MISDEMEANOR_THRESHOLD; ++i) {
             vm.roll(block.number + 1);
             slashIndicator.slash(newVals[2]);
         }
-        assertEq(_incoming * 2, bscValidatorSet.getIncoming(newVals[0]));
-        assertEq(_incoming, bscValidatorSet.getIncoming(newVals[1]));
-        assertEq(0, bscValidatorSet.getIncoming(newVals[2]));
+        assertEq(_incoming * 2, dorsenValidatorSet.getIncoming(newVals[0]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(newVals[1]));
+        assertEq(0, dorsenValidatorSet.getIncoming(newVals[2]));
         vm.stopPrank();
     }
 
@@ -180,12 +180,12 @@ contract SlashIndicatorTest is Deployer {
             _batchCreateValidators(3);
 
         vm.startPrank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         uint256 _deposit = 1 ether;
         uint256 _incoming = _calcIncoming(_deposit);
-        bscValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
-        assertEq(_incoming, bscValidatorSet.getIncoming(consensusAddrs[0]));
+        dorsenValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(consensusAddrs[0]));
 
         for (uint256 i; i < MISDEMEANOR_THRESHOLD; ++i) {
             vm.roll(block.number + 1);
@@ -193,25 +193,25 @@ contract SlashIndicatorTest is Deployer {
         }
         (, uint256 count) = slashIndicator.getSlashIndicator(consensusAddrs[0]);
         assertEq(MISDEMEANOR_THRESHOLD, count);
-        assertEq(0, bscValidatorSet.getIncoming(consensusAddrs[0]));
+        assertEq(0, dorsenValidatorSet.getIncoming(consensusAddrs[0]));
         vm.stopPrank();
 
         vm.prank(consensusAddrs[0]);
-        bscValidatorSet.exitMaintenance();
+        dorsenValidatorSet.exitMaintenance();
 
         vm.startPrank(coinbase);
-        bscValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
+        dorsenValidatorSet.deposit{ value: _deposit }(consensusAddrs[0]);
         for (uint256 i; i < FELONY_THRESHOLD - MISDEMEANOR_THRESHOLD; ++i) {
             vm.roll(block.number + 1);
             slashIndicator.slash(consensusAddrs[0]);
         }
         (, count) = slashIndicator.getSlashIndicator(consensusAddrs[0]);
         assertEq(0, count);
-        assertEq(0, bscValidatorSet.getIncoming(consensusAddrs[0]));
-        assertEq(_incoming, bscValidatorSet.getIncoming(consensusAddrs[1]));
-        assertEq(_incoming, bscValidatorSet.getIncoming(consensusAddrs[2]));
+        assertEq(0, dorsenValidatorSet.getIncoming(consensusAddrs[0]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(consensusAddrs[1]));
+        assertEq(_incoming, dorsenValidatorSet.getIncoming(consensusAddrs[2]));
 
-        address[] memory vals = bscValidatorSet.getValidators();
+        address[] memory vals = dorsenValidatorSet.getValidators();
         assertEq(2, vals.length);
         vm.stopPrank();
     }
@@ -222,7 +222,7 @@ contract SlashIndicatorTest is Deployer {
 
         // case 1: all clean.
         vm.startPrank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         for (uint256 i; i < consensusAddrs.length; ++i) {
             vm.roll(block.number + 1);
@@ -230,7 +230,7 @@ contract SlashIndicatorTest is Deployer {
         }
 
         // do clean
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         uint256 count;
         for (uint256 i; i < consensusAddrs.length; ++i) {
@@ -248,7 +248,7 @@ contract SlashIndicatorTest is Deployer {
         }
 
         // do clean
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         for (uint256 i; i < consensusAddrs.length; ++i) {
             (, count) = slashIndicator.getSlashIndicator(consensusAddrs[i]);
@@ -266,7 +266,7 @@ contract SlashIndicatorTest is Deployer {
         }
 
         // do clean
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         for (uint256 i; i < 10; ++i) {
             (, count) = slashIndicator.getSlashIndicator(consensusAddrs[i]);
@@ -312,12 +312,12 @@ contract SlashIndicatorTest is Deployer {
         ) = _batchCreateValidators(3);
 
         vm.prank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         address operator = operatorAddrs[0];
         address kOld = consensusAddrs[0];
         address kNew = address(uint160(uint256(keccak256("rotated-consensus-key"))));
-        assertTrue(bscValidatorSet.isCurrentValidator(kOld));
+        assertTrue(dorsenValidatorSet.isCurrentValidator(kOld));
 
         // rotate the consensus key to K_new in StakeHub
         vm.warp(block.timestamp + 1 days + 1); // pass UpdateTooFrequently
@@ -327,9 +327,9 @@ contract SlashIndicatorTest is Deployer {
         // active set syncs K_new, drops K_old
         consensusAddrs[0] = kNew;
         vm.prank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
-        assertFalse(bscValidatorSet.isCurrentValidator(kOld));
-        assertTrue(bscValidatorSet.isCurrentValidator(kNew));
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        assertFalse(dorsenValidatorSet.isCurrentValidator(kOld));
+        assertTrue(dorsenValidatorSet.isCurrentValidator(kNew));
 
         // evidence is signed with K_old (precompile 0x68 returns the old signer)
         uint256 mockEvidenceHeight = block.number - 1;
@@ -339,7 +339,7 @@ contract SlashIndicatorTest is Deployer {
         vm.prank(relayer);
         slashIndicator.submitDoubleSignEvidence(hex"01", hex"02");
 
-        assertFalse(bscValidatorSet.isCurrentValidator(kNew));
+        assertFalse(dorsenValidatorSet.isCurrentValidator(kNew));
     }
 
     function testMaliciousVoteSlash() public {
@@ -356,7 +356,7 @@ contract SlashIndicatorTest is Deployer {
             bytes[] memory voteAddrs
         ) = _batchCreateValidators(20);
         vm.prank(coinbase);
-        bscValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
+        dorsenValidatorSet.updateValidatorSetV2(consensusAddrs, votingPowers, voteAddrs);
 
         // case1: valid finality evidence: same target block
         uint256 srcNumA = block.number - 20;
@@ -391,8 +391,8 @@ contract SlashIndicatorTest is Deployer {
     }
 
     function _calcIncoming(uint256 value) internal view returns (uint256 incoming) {
-        uint256 turnLength = bscValidatorSet.getTurnLength();
-        uint256 systemRewardAntiMEVRatio = bscValidatorSet.systemRewardAntiMEVRatio();
+        uint256 turnLength = dorsenValidatorSet.getTurnLength();
+        uint256 systemRewardAntiMEVRatio = dorsenValidatorSet.systemRewardAntiMEVRatio();
         uint256 systemRewardRatio = systemRewardBaseRatio;
         if (turnLength > 1 && systemRewardAntiMEVRatio > 0) {
             systemRewardRatio += systemRewardAntiMEVRatio * (block.number % turnLength) / (turnLength - 1);

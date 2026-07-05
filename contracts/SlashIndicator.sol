@@ -8,7 +8,7 @@ import "./lib/0.6.x/BytesLib.sol";
 import "./lib/0.6.x/Memory.sol";
 import "./interface/0.6.x/ISlashIndicator.sol";
 import "./interface/0.6.x/IApplication.sol";
-import "./interface/0.6.x/IBSCValidatorSet.sol";
+import "./interface/0.6.x/IDorsenValidatorSet.sol";
 import "./interface/0.6.x/IParamSubscriber.sol";
 import "./interface/0.6.x/ISystemReward.sol";
 import "./interface/0.6.x/IStakeHub.sol";
@@ -130,7 +130,7 @@ contract SlashIndicator is
         address validator
     ) external onlyCoinbase onlyInit oncePerBlock onlyZeroGasPrice {
         if (
-            !IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).isCurrentValidator(
+            !IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).isCurrentValidator(
                 validator
             )
         ) {
@@ -147,10 +147,10 @@ contract SlashIndicator is
         indicator.height = block.number;
         if (indicator.count % felonyThreshold == 0) {
             indicator.count = 0;
-            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(validator);
+            IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(validator);
             _downtimeSlash(validator, indicator.count, false);
         } else if (indicator.count % misdemeanorThreshold == 0) {
-            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).misdemeanor(validator);
+            IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).misdemeanor(validator);
         }
         indicators[validator] = indicator;
         emit validatorSlashed(validator);
@@ -287,7 +287,7 @@ contract SlashIndicator is
 
         // check voteAddr to protect validators from being slashed for old voteAddr
         require(
-            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR)
+            IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR)
                 .isMonitoredForMaliciousVote(_evidence.voteAddr),
             "voteAddr is not found"
         );
@@ -300,7 +300,7 @@ contract SlashIndicator is
         );
 
         // reward sender and felony validator if validator found
-        (address[] memory vals, bytes[] memory voteAddrs) = IBSCValidatorSet(
+        (address[] memory vals, bytes[] memory voteAddrs) = IDorsenValidatorSet(
             VALIDATOR_CONTRACT_ADDR
         ).getLivingValidators();
         for (uint256 i; i < voteAddrs.length; ++i) {
@@ -311,7 +311,7 @@ contract SlashIndicator is
                     msg.sender,
                     amount
                 );
-                IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(vals[i]);
+                IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(vals[i]);
                 break;
             }
         }
@@ -373,7 +373,7 @@ contract SlashIndicator is
 
         // reward sender and felony validator
         IStakeHub(STAKE_HUB_ADDR).doubleSignSlash(signer);
-        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(signer);
+        IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(signer);
 
         uint256 amount = (address(SYSTEM_REWARD_ADDR).balance *
             felonySlashRewardRatio) / 100;

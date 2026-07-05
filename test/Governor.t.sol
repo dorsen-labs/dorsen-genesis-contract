@@ -41,17 +41,17 @@ contract GovernorTest is Deployer {
         uint256 shares = IStakeCredit(credit).balanceOf(delegator);
         assertEq(shares, bnbAmount);
 
-        uint256 govBNBBalance = govToken.balanceOf(delegator);
-        assertEq(govBNBBalance, bnbAmount);
+        uint256 govDCBalance = govToken.balanceOf(delegator);
+        assertEq(govDCBalance, bnbAmount);
 
         assertEq(govToken.getVotes(delegator), 0);
         govToken.delegate(delegator);
-        assertEq(govToken.getVotes(delegator), govBNBBalance);
+        assertEq(govToken.getVotes(delegator), govDCBalance);
 
         address user2 = _getNextUserAddress();
         govToken.delegate(user2);
         assertEq(govToken.getVotes(delegator), 0);
-        assertEq(govToken.getVotes(user2), govBNBBalance);
+        assertEq(govToken.getVotes(user2), govDCBalance);
 
         vm.stopPrank();
     }
@@ -67,13 +67,13 @@ contract GovernorTest is Deployer {
         uint256 shares = IStakeCredit(credit).balanceOf(delegator);
         assertEq(shares, bnbAmount);
 
-        uint256 govBNBBalance = govToken.balanceOf(delegator);
-        assertEq(govBNBBalance, bnbAmount);
+        uint256 govDCBalance = govToken.balanceOf(delegator);
+        assertEq(govDCBalance, bnbAmount);
 
         assertEq(govToken.getVotes(delegator), 0);
         govToken.delegate(delegator);
-        assertEq(govToken.getVotes(delegator), govBNBBalance);
-        console2.log("govBNBBalance", govBNBBalance);
+        assertEq(govToken.getVotes(delegator), govDCBalance);
+        console2.log("govDCBalance", govDCBalance);
 
         // text Propose
         address[] memory targets;
@@ -97,7 +97,7 @@ contract GovernorTest is Deployer {
         //        assertEq(governor.proposeStarted(), true, "propose should not start");
 
         // mainnet totalSupply is already enough
-        // // govBNB totalSupply not enough
+        // // govDC totalSupply not enough
         // string memory description = "test";
         // vm.expectRevert();
         // uint256 proposalId = governor.propose(targets, values, calldatas, description);
@@ -109,17 +109,17 @@ contract GovernorTest is Deployer {
         // assertEq(governor.proposeStarted(), true, "propose should start");
         //
         // bnbAmount = 10000000 ether - 2000 ether;
-        // govBNBBalance = govToken.balanceOf(delegator);
-        // console2.log("govBNBBalance", govBNBBalance);
-        // assertEq(govBNBBalance, bnbAmount);
-        // assertEq(govToken.getVotes(delegator), govBNBBalance);
+        // govDCBalance = govToken.balanceOf(delegator);
+        // console2.log("govDCBalance", govDCBalance);
+        // assertEq(govDCBalance, bnbAmount);
+        // assertEq(govToken.getVotes(delegator), govDCBalance);
         // console2.log("voting power before undelegate", govToken.getVotes(delegator));
 
         // voting power changed after undelegating staking share
         bnbAmount = 1 ether;
         stakeHub.undelegate(validator, bnbAmount);
         console2.log("voting power after undelegate", govToken.getVotes(delegator));
-        assertEq(govToken.getVotes(delegator), govBNBBalance - bnbAmount);
+        assertEq(govToken.getVotes(delegator), govDCBalance - bnbAmount);
     }
 
     function testProposalNotApproved() public {
@@ -259,12 +259,12 @@ contract GovernorTest is Deployer {
         uint256 shares = IStakeCredit(credit).balanceOf(delegator);
         assertEq(shares, bnbAmount);
 
-        uint256 govBNBBalance = govToken.balanceOf(delegator);
-        assertEq(govBNBBalance, bnbAmount);
+        uint256 govDCBalance = govToken.balanceOf(delegator);
+        assertEq(govDCBalance, bnbAmount);
 
         assertEq(govToken.getVotes(delegator), 0);
         govToken.delegate(delegator);
-        assertEq(govToken.getVotes(delegator), govBNBBalance);
+        assertEq(govToken.getVotes(delegator), govDCBalance);
 
         // text Propose
         address[] memory targets;
@@ -337,12 +337,12 @@ contract GovernorTest is Deployer {
         uint256 shares = IStakeCredit(credit).balanceOf(delegator);
         assertEq(shares, bnbAmount);
 
-        uint256 govBNBBalance = govToken.balanceOf(delegator);
-        assertEq(govBNBBalance, bnbAmount);
+        uint256 govDCBalance = govToken.balanceOf(delegator);
+        assertEq(govDCBalance, bnbAmount);
 
         assertEq(govToken.getVotes(delegator), 0);
         govToken.delegate(delegator);
-        assertEq(govToken.getVotes(delegator), govBNBBalance);
+        assertEq(govToken.getVotes(delegator), govDCBalance);
 
         // text Propose
         address[] memory targets;

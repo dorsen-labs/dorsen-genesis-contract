@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./SystemV2.sol";
 import "./extension/Protectable.sol";
-import "./interface/0.8.x/IBSCValidatorSet.sol";
+import "./interface/0.8.x/IDorsenValidatorSet.sol";
 import "./interface/0.8.x/IGovToken.sol";
 import "./interface/0.8.x/IStakeCredit.sol";
 import "./lib/0.8.x/Utils.sol";
@@ -849,8 +849,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         );
         _jailValidator(valInfo, jailUntil);
         // Evict using the post-rotation consensus key; SlashIndicator's voteAddr-based
-        // eviction covers the case where BSCValidatorSet has not yet synced K_new.
-        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+        // eviction covers the case where DorsenValidatorSet has not yet synced K_new.
+        IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
             valInfo.consensusAddress
         );
 
@@ -901,8 +901,8 @@ contract StakeHub is SystemV2, Initializable, Protectable {
         );
         _jailValidator(valInfo, jailUntil);
         // Evict using the post-rotation consensus key; SlashIndicator's felony(K_old)
-        // covers the case where BSCValidatorSet has not yet synced K_new.
-        IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+        // covers the case where DorsenValidatorSet has not yet synced K_new.
+        IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
             valInfo.consensusAddress
         );
 
@@ -1498,7 +1498,7 @@ contract StakeHub is SystemV2, Initializable, Protectable {
             minSelfDelegationBNB
         ) {
             _jailValidator(valInfo, block.timestamp + downtimeJailTime);
-            IBSCValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
+            IDorsenValidatorSet(VALIDATOR_CONTRACT_ADDR).felony(
                 valInfo.consensusAddress
             );
         }

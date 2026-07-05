@@ -14,7 +14,7 @@ import "./extension/Protectable.sol";
 import "./lib/0.8.x/Utils.sol";
 import "./interface/0.8.x/IGovToken.sol";
 
-contract BSCGovernor is
+contract DorsenGovernor is
     SystemV2,
     Initializable,
     Protectable,
@@ -41,7 +41,7 @@ contract BSCGovernor is
     uint256 private constant INIT_QUORUM_NUMERATOR = 10; // for >= 10%
 
     // starting propose requires totalSupply of GovDC >= 10500 * 1e18
-    uint256 private constant PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD =
+    uint256 private constant PROPOSE_START_GOVDC_SUPPLY_THRESHOLD =
         10_500 ether;
     // ensures there is a minimum voting period (1 days) after quorum is reached
     uint64 private constant INIT_MIN_PERIOD_AFTER_QUORUM =
@@ -66,7 +66,7 @@ contract BSCGovernor is
 
     /*----------------- init -----------------*/
     function initialize() external initializer onlyCoinbase onlyZeroGasPrice {
-        __Governor_init("BSCGovernor");
+        __Governor_init("DorsenGovernor");
         __GovernorSettings_init(
             INIT_VOTING_DELAY,
             INIT_VOTING_PERIOD,
@@ -80,7 +80,7 @@ contract BSCGovernor is
         __GovernorVotesQuorumFraction_init(INIT_QUORUM_NUMERATOR);
         __GovernorPreventLateQuorum_init(INIT_MIN_PERIOD_AFTER_QUORUM);
 
-        // BSCGovernor => Timelock => GovHub => system contracts
+        // DorsenGovernor => Timelock => GovHub => system contracts
         whitelistTargets[GOV_HUB_ADDR] = true;
 
         // Different address will be set depending on the environment
@@ -344,7 +344,7 @@ contract BSCGovernor is
         if (!proposeStarted) {
             if (
                 IGovToken(GOV_TOKEN_ADDR).totalSupply() <
-                PROPOSE_START_GOVBNB_SUPPLY_THRESHOLD
+                PROPOSE_START_GOVDC_SUPPLY_THRESHOLD
             ) {
                 revert TotalSupplyNotEnough();
             }

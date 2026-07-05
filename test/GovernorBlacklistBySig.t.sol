@@ -3,7 +3,7 @@ pragma solidity ^0.8.10;
 import "./utils/Deployer.sol";
 
 // Regression coverage for SRC-2026-950:
-// BSCGovernor._castVote must reject a blacklisted VOTER (the EIP-712-recovered `account`),
+// DorsenGovernor._castVote must reject a blacklisted VOTER (the EIP-712-recovered `account`),
 // not only a blacklisted msg.sender, so a blacklisted voter cannot bypass the blacklist by
 // having a clean relayer submit its signed ballot via castVoteBySig.
 contract GovernorBlacklistBySigTest is Deployer {
@@ -77,7 +77,7 @@ contract GovernorBlacklistBySigTest is Deployer {
 
         // direct vote by the blacklisted voter reverts (baseline)
         vm.prank(voter);
-        vm.expectRevert(BSCGovernor.InBlackList.selector);
+        vm.expectRevert(DorsenGovernor.InBlackList.selector);
         governor.castVote(proposalId, 1);
 
         // sign the ballot off-chain with the voter's key
@@ -88,7 +88,7 @@ contract GovernorBlacklistBySigTest is Deployer {
         address relayer = _getNextUserAddress();
         assertFalse(governor.blackList(relayer), "relayer is clean");
         vm.prank(relayer);
-        vm.expectRevert(BSCGovernor.InBlackList.selector);
+        vm.expectRevert(DorsenGovernor.InBlackList.selector);
         governor.castVoteBySig(proposalId, 1, v, r, s);
 
         assertFalse(governor.hasVoted(proposalId, voter), "blacklisted voter must not have voted");
