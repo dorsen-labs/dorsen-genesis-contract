@@ -1,8 +1,8 @@
 const web3 = require('web3');
 const init_holders = [
-  {% for initHolder in initHolders %}{
-     address: '{{initHolder }}',
-     balance: BigInt('209948900000000000000000').toString(16) // 209948.9e18
+  {% for holder in initHolders %}{
+     address: '{{holder.address }}',
+    balance: BigInt('{{ holder.balance }}').toString(16) // 209948.9e18
   },{% endfor %}
 ];
 
