@@ -279,6 +279,8 @@ def _patch_protector(contract, new_protector):
 def dorsen(
     dorsen_chain_id: int = 99110,
     source_chain_id: str = "Dorsen-Chain",
+    lock_amount_treasury_address: str = "address(0xdEaD)",
+    tx_fee_treasury_address: str = "address(0xdEaD)",
     stake_hub_protector: str = "address(0xdEaD)",
     governor_protector: str = "address(0xdEaD)",
     token_recover_portal_protector: str = "address(0xdEaD)",
@@ -306,13 +308,26 @@ def dorsen(
     _patch_protector("StakeHub.sol", stake_hub_protector)
     _patch_protector("BSCGovernor.sol", governor_protector)
     _patch_protector("TokenRecoverPortal.sol", token_recover_portal_protector)
+
+
     # 3. Patch source_chain_id
     replace_parameter("TokenRecoverPortal.sol",
         "string public constant SOURCE_CHAIN_ID", f'"{source_chain_id}"')
     # 4. Patch init_validator_set_bytes
     replace_parameter("BSCValidatorSet.sol",
         "bytes public constant INIT_VALIDATORSET_BYTES", f'hex"{init_validator_set_bytes}"')
-    # 5. Forge build + generate genesis JSON
+
+    # 5. Replace txFeeTreasuryAddress value with tx_fee_treasury_address
+    replace("BSCValidatorSet.sol", 
+        r"txFeeTreasuryAddress = .*\;",
+        f"txFeeTreasuryAddress = {tx_fee_treasury_address};")
+
+    # 5. Replace lockAmountTreasuryAddress value with lock_amount_treasury_address
+    replace("StakeHub.sol", 
+        r"lockAmountTreasuryAddress = .*\;",
+        f"lockAmountTreasuryAddress = {lock_amount_treasury_address};")
+    
+    # 7. Forge build + generate genesis JSON
     generate_genesis(
         "./genesis-dorsen.json",
         maxwell_time=maxwell_time,
