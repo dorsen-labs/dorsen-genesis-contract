@@ -37,16 +37,16 @@
     "pragueTime": 0,
     "lorentzTime": 0,
     {% if maxwellTime is defined %}
-        "maxwellTime": {{maxwellTime}},
+    "maxwellTime": {{maxwellTime}},
     {% endif %}
     {% if fermiTime is defined %}
-        "fermiTime": {{fermiTime}},
+    "fermiTime": {{fermiTime}},
     {% endif %}
     {% if osakaTime is defined %}
-        "osakaTime": {{osakaTime}},
+    "osakaTime": {{osakaTime}},
     {% endif %}
     {% if mendelTime is defined %}
-        "mendelTime": {{mendelTime}},
+    "mendelTime": {{mendelTime}},
     {% endif %}
     "depositContractAddress": "0x0000000000000000000000000000000000000000",
     "parlia": {},
@@ -141,12 +141,10 @@
     "0x0000000000000000000000000000000000003000": {
       "balance": "0x0",
       "code": "{{tokenRecoverPortal}}"
-    }{% for v in initHolders %
-    },
+    }{% for v in initHolders %},
     "{{ v.address.replace('0x', '') }}": {
       "balance": "0x{{ v.balance }}"
-    }{% endfor %
-    }
+    }{% endfor %}
   },
   "number": "0x0",
   "gasUsed": "0x0",

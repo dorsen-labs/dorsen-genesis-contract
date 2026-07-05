@@ -63,7 +63,7 @@ contract BSCValidatorSet is
 
     // BEP-126 Fast Finality
     uint256 public constant INIT_SYSTEM_REWARD_RATIO = 625; // 625/10000 is 1/16
-    uint256 public constant MAX_SYSTEM_REWARD_BALANCE = 10 ether;
+    uint256 public constant MAX_SYSTEM_REWARD_BALANCE = 25 ether;
 
     uint256 public systemRewardBaseRatio;
     uint256 public previousHeight;
