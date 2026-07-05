@@ -1,9 +1,6 @@
 {
   "config": {
-    "chainId": {
-      {chainId
-      }
-    },
+    "chainId": {{chainId}},
     "homesteadBlock": 0,
     "eip150Block": 0,
     "eip155Block": 0,
@@ -38,26 +35,19 @@
     "bohrTime": 0,
     "pascalTime": 0,
     "pragueTime": 0,
-    "lorentzTime": {
-      {lorentzTime
-      }
-    },
-    "maxwellTime": {
-      {maxwellTime
-      }
-    },
-    "fermiTime": {
-      {fermiTime
-      }
-    },
-    "osakaTime": {
-      {osakaTime
-      }
-    },
-    "mendelTime": {
-      {mendelTime
-      }
-    },
+    "lorentzTime": 0,
+    {% if maxwellTime is defined %}
+        "maxwellTime": {{maxwellTime}},
+    {% endif %}
+    {% if fermiTime is defined %}
+        "fermiTime": {{fermiTime}},
+    {% endif %}
+    {% if osakaTime is defined %}
+        "osakaTime": {{osakaTime}},
+    {% endif %}
+    {% if mendelTime is defined %}
+        "mendelTime": {{mendelTime}},
+    {% endif %}
     "depositContractAddress": "0x0000000000000000000000000000000000000000",
     "parlia": {},
     "blobSchedule": {
