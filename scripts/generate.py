@@ -1,3 +1,4 @@
+from decimal import Decimal
 import fileinput
 import os
 import re
@@ -244,9 +245,83 @@ def generate_gov_hub():
         )
 
 
-def generate_genesis(output="./genesis.json"):
+def generate_genesis(output="./genesis.json", maxwell_time=None, fermi_time=None, osaka_time=None, mendel_time=None):
     subprocess.run(["forge", "build"], cwd=work_dir, check=True)
-    subprocess.run(["node", "scripts/generate-genesis.js", "--chainId", f"{chain_id}", "--output", f"{output}"], cwd=work_dir, check=True)
+    cmd = [
+        "node", "scripts/generate-genesis.js",
+        "--chainId", f"{chain_id}",
+        "--output", f"{output}",
+    ]
+    if maxwell_time is not None:
+        cmd.extend(["--maxwellTime", maxwell_time])
+    if fermi_time is not None:
+        cmd.extend(["--fermiTime", fermi_time])
+    if osaka_time is not None:
+        cmd.extend(["--osakaTime", osaka_time])
+    if mendel_time is not None:
+        cmd.extend(["--mendelTime", mendel_time])
+    subprocess.run(cmd, cwd=work_dir, check=True)
+
+# New Helper: _patch_protector()
+def _patch_protector(contract, new_protector):
+    """Replace hardcoded BSC mainnet protector with Dorsen INIT_HOLDER."""
+    filepath = os.path.join(work_dir, "contracts", contract)
+    with open(filepath, "r") as f:
+        content = f.read()
+    content = content.replace(
+        "0x08E68Ec70FA3b629784fDB28887e206ce8561E08",
+        new_protector
+    )
+    with open(filepath, "w") as f:
+        f.write(content)
+
+@main.command(help="Generate contracts for Dorsen chain")
+def dorsen(
+    dorsen_chain_id: int = 99110,
+    source_chain_id: str = "Dorsen-Chain",
+    stake_hub_protector: str = "address(0xdEaD)",
+    governor_protector: str = "address(0xdEaD)",
+    token_recover_portal_protector: str = "address(0xdEaD)",
+    maxwell_time: str = None,
+    fermi_time: str = None,
+    osaka_time: str = None,
+    mendel_time: str = None,
+):
+    global network, chain_id, hex_chain_id
+    network = "dorsen"
+    chain_id = dorsen_chain_id
+    hex_chain_id = convert_chain_id(chain_id)
+    # 1. Get validator set bytes (same as dev)
+    try:
+        result = subprocess.run(
+            ["node", "-e",
+             "const e = require('./scripts/validators.js'); "
+             "console.log(e.validatorSetBytes.toString('hex'));"],
+            capture_output=True, text=True, check=True, cwd=work_dir
+        )
+        init_validator_set_bytes = result.stdout.strip()[2:]
+    except subprocess.CalledProcessError as e:
+        raise Exception(f"Error getting init_validatorset_bytes: {e}")
+    # 2. Patch protector addresses ONLY (sed replace BSC mainnet address)
+    _patch_protector("StakeHub.sol", stake_hub_protector)
+    _patch_protector("BSCGovernor.sol", governor_protector)
+    _patch_protector("TokenRecoverPortal.sol", token_recover_portal_protector)
+    # 3. Patch source_chain_id
+    replace_parameter("TokenRecoverPortal.sol",
+        "string public constant SOURCE_CHAIN_ID", f'"{source_chain_id}"')
+    # 4. Patch init_validator_set_bytes
+    replace_parameter("BSCValidatorSet.sol",
+        "bytes public constant INIT_VALIDATORSET_BYTES", f'hex"{init_validator_set_bytes}"')
+    # 5. Forge build + generate genesis JSON
+    generate_genesis(
+        "./genesis-dorsen.json",
+        maxwell_time=maxwell_time,
+        fermi_time=fermi_time, 
+        osaka_time=osaka_time, 
+        mendel_time=mendel_time, 
+    )
+    print("Generate genesis of Dorsen successfully")
+
 
 
 @main.command(help="Generate contracts for BSC mainnet")
@@ -359,6 +434,7 @@ def testnet():
     print("Generate genesis of testnet successfully")
 
 
+
 @main.command(help="Generate contracts for dev environment")
 def dev(
     dev_chain_id: int = 714,
@@ -454,15 +530,19 @@ def recover():
 
 @main.command(help="Generate init holders")
 def generate_init_holders(
-    init_holders: Annotated[str, typer.Argument(help="A list of addresses separated by comma")],
+    init_holders: Annotated[str, typer.Argument(
+        help="Comma-separated address:balance pairs in ether (1 ether = 1e18 wei), e.g. 0xABC:209948,0xDEF:52"
+    )],
     template_file: str = "./scripts/init_holders.template",
     output_file: str = "./scripts/init_holders.js"
 ):
-    init_holders = init_holders.split(",")
-    data = {
-        "initHolders": init_holders,
-    }
-
+    holders = []
+    for pair in init_holders.split(","):
+        addr, bal = pair.split(":")
+        from decimal import Decimal
+        bal_in_wei = int(Decimal(bal) * Decimal(1e18))
+        holders.append({"address": addr.strip(), "balance": bal_in_wei})
+    data = {"initHolders": holders}
     generate_from_template(data, template_file, output_file)
     print("Generate init holders successfully")
 
