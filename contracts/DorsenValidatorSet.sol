@@ -171,10 +171,13 @@ contract DorsenValidatorSet is
         ) = decodeValidatorSet(INIT_VALIDATORSET_BYTES);
         require(valid, "failed to parse init validatorSet");
         for (uint256 i; i < validatorSetPkg.validatorSet.length; ++i) {
+            ValidatorExtra memory validatorExtra;
             currentValidatorSet.push(validatorSetPkg.validatorSet[i]);
             currentValidatorSetMap[
                 validatorSetPkg.validatorSet[i].consensusAddress
             ] = i + 1;
+            validatorExtraSet.push(validatorExtra);
+            validatorExtraSet[i].voteAddress = validatorSetPkg.voteAddrs[i];
         }
         turnLength = 8; // as go live on lorentz forked initially, later will update it
         txFeeTreasuryAddress = 0x000000000000000000000000000000000000dEaD;
@@ -191,7 +194,6 @@ contract DorsenValidatorSet is
         external
         override
         onlyInit
-        onlyCrossChainContract
         initValidatorExtraSet
         returns (bytes memory responsePayload)
     {
@@ -221,6 +223,7 @@ contract DorsenValidatorSet is
         uint64[] memory _votingPowers,
         bytes[] memory _voteAddrs
     ) public onlyCoinbase onlyZeroGasPrice {
+        if (block.number < 2000) return;
         uint256 _length = _consensusAddrs.length;
         Validator[] memory _validatorSet = new Validator[](_length);
         for (uint256 i; i < _length; ++i) {
